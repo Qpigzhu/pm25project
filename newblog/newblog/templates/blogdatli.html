@@ -1,0 +1,324 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block title %}{% endblock %}
+{% block main %}
+<div class="wrap">
+<div class="wrapper">
+	<div class="main">
+		<div class="content">
+			<h2 class="style list"><a href="#">{{ blog_datil.title }}</a></h2>
+			<h3 class="style">{{ blog_datil.create_time }}</h3>
+			<div class="list_img">
+				<img src="{{ MEDIA_URL }}{{ blog_datil.images }}" alt="" align=""/>
+			</div>
+			<p class="para top">{{ blog_datil.comment|safe }}</p>
+			<div class="article top1">
+				<ul>
+                    <li class="twitter {{ active_like }}" id="like"><a id="like_num">点赞:{{ like_num }}</a></li>
+					<li class="pinterest {{ active_hous }}" id="hous"><a id="house_status">{{ hous_status }}</a></li>
+				</ul>
+			</div>
+			<div class="clear"></div>
+		</div>
+	<div class="content">
+        {% for comment in all_comment %}
+		<div class="grids_of_2">
+			<div class="grid1_of_2">
+				<div class="grid_img">
+					<a href=""><img src="{% static 'images/pic10.jpg' %}" alt=""/></a>
+				</div>
+				<div class="grid_text">
+					<h4 class="style1 list"><a href="#">{{ comment.user.username }}</a></h4>
+					<h3 class="style">{{ comment.add_time }}</h3>
+					<p class="para top">{{ comment.comment }}</p>
+					<a id="reply_id" class="btn1"  data-toggle="modal"  data-target="#exampleModal"  onclick="reply({{ comment.id }},{{ comment.user.id }},{{ comment.id }})">Click to Reply</a>
+				</div>
+                <input type="hidden" id="root_{{ comment.id }}" value="{{ comment.id }}">
+				<div class="clear"></div>
+			</div>
+                            {#    回复评论弹框        #}
+            <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="exampleModalLabel">New message</h4>
+                  </div>
+                  <div class="modal-body">
+                    <form>
+                      <div class="form-group">
+                        <input type="hidden" id="root_ids" name="root_id">
+                        <input type="hidden" id="user_ids" name="user_id">
+                        <input type="hidden" id="par_ids" name="par_id" value="">
+                        <label for="message-text" class="control-label">Message:</label>
+                        <textarea class="form-control" id="message-text"></textarea>
+                      </div>
+                    </form>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <a type="submit" id="add_rep" class="btn btn-primary">回复评论</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+
+
+            {% for rep in comment.root_comment.all %}
+			<div class="grid1_of_2 left">
+				<div class="grid_img">
+					<a href=""><img src="{% static 'images/pic11.jpg' %}" alt=""/></a>
+				</div>
+				<div class="grid_text">
+                    <h4 class="style1 list"><a>{{ rep.user.username }} 回复 {{ rep.reply_to.username }}</a></h4>
+					<h3 class="style">{{ rep.add_time }}</h3>
+					<p class="para top">{{ rep.comment }}</p>
+					<a id="reply_id" class="btn1"  data-toggle="modal"  data-target="#exampleModal"  onclick="reply({{ comment.id }},{{ rep.user.id }},{{ rep.id }})">Click to Reply</a>
+				</div>
+				<div class="clear"></div>
+			</div>
+            {% endfor %}
+    {% endfor %}
+
+
+
+
+			<div class="artical-commentbox">
+                    {% if request.user.is_authenticated %}
+                    <h2>Leave a Comment</h2>
+		  			<div class="table-form">
+						<form>
+                            <input type="hidden" name="blog_id" value="{{ blog_datil.id }}">
+							<textarea name="comment" id="comment" value="Message:" onfocus="this.value = '';" onblur="if (this.value == '') {this.value = 'Message';}">Message:</textarea>
+						</form>
+							<a   id="comment-submit">Submit</a>
+					</div>
+					<div class="clear"></div>
+                    {% else %}
+                        <h2>登录才可评论哦~~</h2>
+                    {% endif %}
+		  		</div>
+			</div>
+	</div>
+	<div class="clear"></div>
+	</div>
+</div>
+</div>
+<script>
+//ajax点赞
+function likeChang(obj,blog_id){
+    var is_like = document.getElementsByClassName("true_like").length == 0
+    $.ajax({
+        url:"{% url 'like' %}",
+        type:"POST",
+        data:{
+            blog_id:blog_id,
+            is_like:is_like,
+        },
+        beforeSend:function (xhr,settings) {
+            xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+        },
+        cache:false,
+        success:function (data) {
+            console.log(data)
+            if(data['status'] == 'SUCCESS'){
+                var element = $(document.getElementById('like'));
+                if(is_like){
+                    element.removeClass("false_like");
+                    element.addClass("true_like");
+                }else{
+                    element.removeClass("true_like");
+                    element.addClass("false_like");
+                }
+                //更新点赞数
+                var like_num = $(document.getElementById('like_num'));
+                like_num.text("点赞:"+data['like_num']);
+            }else{
+                if(data['code'] == 400){
+                    alert("登录才可点赞哦~~~");
+                }else{
+                    alert(data['message']);
+                }
+            }
+        },
+        error:function (xhr) {
+            console.log(xhr)
+
+        }
+
+    });
+}
+
+//收藏功能
+function housChang(obj,blog_id){
+    var is_hous = document.getElementsByClassName("true_hous").length == 0;
+    $.ajax({
+        url:"{% url 'hous' %}",
+        type:"POST",
+        data:{
+            blog_id:blog_id,
+            is_hous:is_hous,
+        },
+        beforeSend:function (xhr,settings) {
+            xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+        },
+        cache:false,
+        success:function (data) {
+            console.log(data)
+            if (data['status'] == 'SUCCESS'){
+                var element = $(document.getElementById('hous'));
+                var status = $(document.getElementById('house_status'));
+                if(is_hous){
+                    element.removeClass("false_hous");
+                    element.addClass("true_hous");
+                    status.text("已收藏");
+                }else{
+                    element.removeClass("true_hous");
+                    element.addClass("false_hous");
+                    status.text("未收藏");
+                }
+            }else{
+                if(data['code'] == 400){
+                    alert("登录才可收藏哦~~~");
+                }else{
+                    alert(data['massage']);
+                }
+            }
+        },
+        error:function (xhr) {
+            console.log(xhr);
+        }
+
+    });
+}
+
+//评论功能
+function add_comment () {
+    var comments = $("#comment").val()
+    if (comments == ""){
+        alert("评论不能为空")
+        return
+    }
+    $.ajax({
+       cache:false,
+       type:'POST',
+       url:'{% url 'comment' %}',
+       data:{blog_id:{{ blog_datil.id }},comment:comments},
+       ansyc:true,
+       beforeSend:function (xhr,settings) {
+           xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+       },
+       success:function (data) {
+            if(data['status'] == 'SUCCESS'){
+                window.location.reload();//刷新当前页面.
+            }else{
+                if(data['code'] == 401){
+                    alert("用户未登录")
+                }else{
+                    alert(data['massage'])
+                }
+            }
+       } 
+    });
+}
+
+//添加评论
+function add_Reply(){
+        var root_id = $('#root_ids').val();
+        var user_id = $('#user_ids').val();
+        var par_id = $('#par_ids').val();
+        var comment = $('#message-text').val();
+        if (comment == ''){
+            alert("评论内容不能为空");
+            return
+        }
+        $.ajax({
+                cache:false,
+                type:'POST',
+                url:'{% url 'rep' %}',
+               data:{root_id:root_id,
+                     user_id:user_id,
+                     par_id:par_id,
+                     comment:comment,
+                   blog_id : {{ blog_datil.id }},
+               },
+               ansyc:true,
+               beforeSend:function (xhr,settings) {
+                   xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+               },
+               success:function (data) {
+                    if(data['status'] == 'SUCCESS'){
+                        window.location.reload();//刷新当前页面.
+                    }else{
+                        if(data['code'] == 401){
+                            alert("用户未登录")
+                        }else{
+                            alert(data['massage'])
+                        }
+                    }
+                }
+        });
+}
+
+
+
+
+
+
+$(function () {
+    $('#add_rep').click(function () {
+       add_Reply();
+    });
+});
+
+
+$(function () {
+    $("#like").click(function () {
+        likeChang($(this),{{ blog_datil.id }});
+    });
+});
+
+
+$(function () {
+   $("#hous").click(function () {
+       housChang($(this),{{ blog_datil.id }});
+   });
+});
+
+
+//动态添加值
+function reply(root_id,user_id,par_id){
+    // 设置值
+    $('#root_ids').val(root_id);
+    $('#user_ids').val(user_id);
+    $('#par_ids').val(par_id);
+
+}
+
+
+
+
+
+
+
+
+$(function () {
+   $("#comment-submit").click(function () {
+        add_comment();
+   });
+});
+
+$(function () {
+   $("btn1").click(function () {
+            $('#exampleModal').modal(options);
+   })
+});
+
+
+
+
+
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block title %}登录{% endblock %}
+{% block main %}
+<div class="wrap">
+<div class="wrapper">
+	<div class="main">
+        <div class="containter">
+        <div class="row">
+            <div class="col-sm-3"></div>
+            <div class="col-sm-4">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">登录</h3>
+                    </div>
+                    <div class="panel-body">
+                        <form action="{% url 'send_forget_pwd' %}" method="POST">
+                            {% csrf_token %}
+                                <input type="hidden" name="next" value="{% if froms %}{{ froms }}{% else %}/{% endif %}">
+                                <label for="id_username">邮箱</label>
+                                <input type="text" name="email" class="form-control" placeholder="请输入用户名或邮箱" required id="id_username" />
+                                <p class="text-danger"></p>
+                                <label for="id_password">验证码</label>
+
+                                {{forget_code.captcha}}
+                                <p class="text-danger"></p>
+                                <span class="pull-left text-danger">{% if msg %}{{ msg }}{% endif %}{% for i,error in forget_code.errors.items %}{{ error }}{% endfor %}</span>
+                            <input type="submit" value="发送邮件" class="btn btn-primary pull-right">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+	</div>
+</div>
+</div>
+<script>
+//刷新验证码图片
+$(function(){
+    $("img.captcha").click(function(){   //更新验证码图片ajax
+        $.getJSON("/captcha/refresh",function(data){
+            $("img.captcha").attr("src",data.image_url);
+            $("#id_captcha_0").attr("value",data.key);
+        });
+    });
+});
+
+
+</script>
+{% endblock %}
