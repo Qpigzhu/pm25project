@@ -6,4 +6,4 @@ lxml==4.2.5
 pool==0.1.2.dev0
 pytz==2018.5
 requests==2.19.1
-urllib3==1.23
+urllib3==1.26.5
